@@ -11,7 +11,6 @@ BEGIN
 	-- 计算每天的销售开单数据的存储过程
 	-- 调用格式如下 
 	-- exec GetSalesData @inputDate
-	-- select * from (exec GetSalesData '2023-01-31') as a
     with day_s as (
 	-- 日期
 	select * from fr_calendar t where t.dDate = @inputDate
@@ -106,7 +105,9 @@ BEGIN
 
 		GROUP BY H.CCUSCODE
 	)
-	SELECT t.*, c.cCusCode, c.cCusName, d.当日销售开单, d0.当日销售开单 AS 去年同日开单, m.当月销售开单, m0.当月销售开单 AS 去年同期开单, y.当年销售开单,y0.当年销售开单 AS 去年累计开单
+	select dDate,fr_day, cCusCode, cCusName, sales_d, sales_d_0, sales_m, sales_m_0, sales_y,sales_y_0 
+	from
+		(SELECT t.dDate,t.fr_day, c.cCusCode, c.cCusName, d.当日销售开单 as sales_d, d0.当日销售开单 AS sales_d_0, m.当月销售开单 sales_m, m0.当月销售开单 AS sales_m_0, y.当年销售开单 sales_y,y0.当年销售开单 AS sales_y_0
     FROM fr_calendar t
     JOIN Customer c ON 1 = 1
     LEFT JOIN salesdetail_d d ON c.cCusCode = d.cCusCode
@@ -115,6 +116,23 @@ BEGIN
     LEFT JOIN salesdetail_m_0 m0 ON c.cCusCode = m0.cCusCode
     LEFT JOIN salesdetail_y y ON c.cCusCode = y.cCusCode
     LEFT JOIN salesdetail_y_0 y0 ON c.cCusCode = y0.cCusCode
-    WHERE t.fr_day = @inputDate
+    WHERE t.fr_day = @inputDate ) as SomeOtherTable
+	-- 使用游标遍历结果集
+	-- to do 没有写完，明天继续
+	-- 声明变量，用于存储结果集的行数和当前处理的行数
+  DECLARE @RowCount INT, @CurrentRow INT;
+	DECLARE @dDate,@fr_day, @cCusCode, @cCusName, @sales_d, @sales_d_0, @sales_m, @sales_m_0, @sales_y,@sales_y_0 
+	-- 声明游标，用于遍历结果集
+	DECLARE TestDataCursor CURSOR FOR
+        SELECT dDate,fr_day, cCusCode, cCusName, sales_d, sales_d_0, sales_m, sales_m_0, sales_y,sales_y_0  FROM SomeOtherTable;
+	-- 打开游标
+	OPEN TestDataCursor;
+	-- 获取结果集的行数和初始处理行数
+  FETCH NEXT FROM TestDataCursor INTO @CurrentRow, @RowCount;
+	-- 遍历结果集的每一行
+	-- 获取下一行数据，并更新当前处理行数
+	-- 关闭游标并释放资源
+	CLOSE TestDataCursor;
+	DEALLOCATE TestDataCursor;
 	
 END
